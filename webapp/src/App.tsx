@@ -1,35 +1,164 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import {
+    createRootRoute,
+    createRoute,
+    createRouter,
+    Outlet,
+    RouterProvider,
+} from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
 
-function App() {
-  const [count, setCount] = useState(0)
+import { Sidebar } from "@/components/layout/sidebar";
+import { ProtectedRoute } from "@/components/layout/protected-route";
+import { useAuthStore } from "@/stores/auth-store";
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+import { LoginPage } from "@/pages/login";
+import { SignupPage } from "@/pages/signup";
+import { DashboardPage } from "@/pages/dashboard";
+import { CalendarPage } from "@/pages/calendar";
+import { TasksPage } from "@/pages/tasks";
+import { TeamsPage } from "@/pages/teams";
+import { AlertsPage } from "@/pages/alerts";
+import { AnalyticsPage } from "@/pages/analytics";
+
+import "./index.css";
+
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            staleTime: 1000 * 60,
+            retry: 1,
+        },
+    },
+});
+
+// Root layout
+const rootRoute = createRootRoute({
+    component: () => <Outlet />,
+});
+
+// Auth layout (no sidebar)
+function AuthLayout() {
+    return <Outlet />;
 }
 
-export default App
+// Main layout (with sidebar)
+function MainLayout() {
+    return (
+        <ProtectedRoute>
+            <div className="flex min-h-screen bg-slate-900">
+                <Sidebar />
+                <main className="flex-1 overflow-auto">
+                    <Outlet />
+                </main>
+            </div>
+        </ProtectedRoute>
+    );
+}
+
+// Auth routes
+const loginRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/login",
+    component: LoginPage,
+});
+
+const signupRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/signup",
+    component: SignupPage,
+});
+
+// Main app layout route
+const mainLayoutRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    id: "main",
+    component: MainLayout,
+});
+
+// Dashboard (index route)
+const dashboardRoute = createRoute({
+    getParentRoute: () => mainLayoutRoute,
+    path: "/",
+    component: DashboardPage,
+});
+
+// Calendar
+const calendarRoute = createRoute({
+    getParentRoute: () => mainLayoutRoute,
+    path: "/calendar",
+    component: CalendarPage,
+});
+
+// Tasks
+const tasksRoute = createRoute({
+    getParentRoute: () => mainLayoutRoute,
+    path: "/tasks",
+    component: TasksPage,
+});
+
+// Teams
+const teamsRoute = createRoute({
+    getParentRoute: () => mainLayoutRoute,
+    path: "/teams",
+    component: TeamsPage,
+});
+
+// Alerts
+const alertsRoute = createRoute({
+    getParentRoute: () => mainLayoutRoute,
+    path: "/alerts",
+    component: AlertsPage,
+});
+
+// Analytics
+const analyticsRoute = createRoute({
+    getParentRoute: () => mainLayoutRoute,
+    path: "/analytics",
+    component: AnalyticsPage,
+});
+
+// Build route tree
+const routeTree = rootRoute.addChildren([
+    loginRoute,
+    signupRoute,
+    mainLayoutRoute.addChildren([
+        dashboardRoute,
+        calendarRoute,
+        tasksRoute,
+        teamsRoute,
+        alertsRoute,
+        analyticsRoute,
+    ]),
+]);
+
+// Create router
+const router = createRouter({ routeTree });
+
+// Type registration for TypeScript
+declare module "@tanstack/react-router" {
+    interface Register {
+        router: typeof router;
+    }
+}
+
+function App() {
+    const { setLoading, token } = useAuthStore();
+
+    useEffect(() => {
+        // Check if user is already logged in on mount
+        if (token) {
+            setLoading(false);
+        } else {
+            setLoading(false);
+        }
+    }, [token, setLoading]);
+
+    return (
+        <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+        </QueryClientProvider>
+    );
+}
+
+export default App;
