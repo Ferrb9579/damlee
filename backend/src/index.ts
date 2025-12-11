@@ -24,7 +24,7 @@ app.get("/health", (_req, res) => {
 // ORPC Handler
 const handler = new RPCHandler(router);
 
-app.all("/api/*", async (req, res) => {
+app.all("/api/{*splat}", async (req, res) => {
     const context = createContext(req);
 
     // Convert Express request to Fetch Request
