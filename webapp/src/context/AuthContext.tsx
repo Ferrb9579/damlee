@@ -34,7 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { data } = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+    const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, { email, password });
     setToken(data.token);
     setUser(data.user);
     localStorage.setItem('token', data.token);
@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (name: string, email: string, password: string, role: string) => {
-    const { data } = await axios.post('http://localhost:5000/api/auth/register', { name, email, password, role });
+    const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, { name, email, password, role });
     setToken(data.token);
     setUser(data.user);
     localStorage.setItem('token', data.token);
