@@ -37,11 +37,6 @@ const rootRoute = createRootRoute({
     component: () => <Outlet />,
 });
 
-// Auth layout (no sidebar)
-function AuthLayout() {
-    return <Outlet />;
-}
-
 // Main layout (with sidebar)
 function MainLayout() {
     return (

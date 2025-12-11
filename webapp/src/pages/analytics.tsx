@@ -22,14 +22,6 @@ interface TaskMetrics {
     bottlenecks: { reviewBacklog: number; urgentPending: number };
 }
 
-interface EventMetrics {
-    total: number;
-    statusCounts: Record<string, number>;
-    upcomingCount: number;
-    completionRate: number;
-    cancellationRate: number;
-}
-
 interface TeamMetric {
     id: string;
     name: string;
@@ -42,7 +34,6 @@ interface TeamMetric {
 
 export function AnalyticsPage() {
     const [taskMetrics, setTaskMetrics] = useState<TaskMetrics | null>(null);
-    const [eventMetrics, setEventMetrics] = useState<EventMetrics | null>(null);
     const [teamMetrics, setTeamMetrics] = useState<{ totalTeams: number; teams: TeamMetric[] } | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -53,13 +44,12 @@ export function AnalyticsPage() {
     const fetchMetrics = async () => {
         try {
             setLoading(true);
-            const [tasks, events, teams] = await Promise.all([
+            const [tasks, , teams] = await Promise.all([
                 client.analytics.taskMetrics(),
                 client.analytics.eventMetrics(),
                 client.analytics.teamMetrics(),
             ]);
             setTaskMetrics(tasks);
-            setEventMetrics(events);
             setTeamMetrics(teams);
         } catch (error) {
             console.error("Failed to fetch analytics:", error);

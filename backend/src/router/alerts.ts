@@ -1,21 +1,19 @@
 import { z } from "zod";
 import { protectedProcedure, adminProcedure } from "../orpc.js";
 import { Alert } from "../models/index.js";
-import type { Types } from "mongoose";
 
 const alertSchema = z.object({
     title: z.string().min(1),
     message: z.string().min(1),
     type: z.enum(["info", "warning", "error", "success"]).optional(),
     source: z.enum(["manual", "iot", "system"]).optional(),
-    targetUsers: z.array(z.string()).optional(), // Empty = broadcast to all
+    targetUsers: z.array(z.string()).optional(),
     priority: z.enum(["low", "medium", "high", "critical"]).optional(),
-    metadata: z.record(z.unknown()).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
     expiresAt: z.string().datetime().optional(),
 });
 
 export const alertsRouter = {
-    // Get alerts for current user
     list: protectedProcedure
         .input(
             z.object({
@@ -26,8 +24,8 @@ export const alertsRouter = {
         .handler(async ({ input, context }) => {
             const query: Record<string, unknown> = {
                 $or: [
-                    { targetUsers: { $size: 0 } }, // Broadcast alerts
-                    { targetUsers: context.user.userId }, // Targeted alerts
+                    { targetUsers: { $size: 0 } },
+                    { targetUsers: context.user.userId },
                 ],
             };
 
@@ -47,13 +45,12 @@ export const alertsRouter = {
                 source: alert.source,
                 priority: alert.priority,
                 metadata: alert.metadata,
-                isRead: alert.readBy.some((id: Types.ObjectId) => id.toString() === context.user.userId),
+                isRead: alert.readBy.some((id) => id.toString() === context.user.userId),
                 createdAt: alert.createdAt.toISOString(),
                 expiresAt: alert.expiresAt?.toISOString(),
             }));
         }),
 
-    // Get unread count
     unreadCount: protectedProcedure.handler(async ({ context }) => {
         const count = await Alert.countDocuments({
             $or: [
@@ -65,14 +62,21 @@ export const alertsRouter = {
         return { count };
     }),
 
-    // Create alert (admin or system only)
     create: adminProcedure
         .input(alertSchema)
         .handler(async ({ input }) => {
-            const alert = await Alert.create({
-                ...input,
+            const newAlert = new Alert({
+                title: input.title,
+                message: input.message,
+                type: input.type || "info",
+                source: input.source || "manual",
+                targetUsers: input.targetUsers || [],
+                priority: input.priority || "medium",
+                metadata: input.metadata,
                 expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
             });
+
+            const alert = await newAlert.save();
 
             return {
                 id: alert._id.toString(),
@@ -81,7 +85,6 @@ export const alertsRouter = {
             };
         }),
 
-    // Mark alert as read
     markRead: protectedProcedure
         .input(z.object({ id: z.string() }))
         .handler(async ({ input, context }) => {
@@ -91,7 +94,6 @@ export const alertsRouter = {
             return { success: true };
         }),
 
-    // Mark all alerts as read
     markAllRead: protectedProcedure.handler(async ({ context }) => {
         await Alert.updateMany(
             {
@@ -106,18 +108,14 @@ export const alertsRouter = {
         return { success: true };
     }),
 
-    // Delete alert (admin only)
     delete: adminProcedure
         .input(z.object({ id: z.string() }))
         .handler(async ({ input }) => {
             const alert = await Alert.findByIdAndDelete(input.id);
-            if (!alert) {
-                throw new Error("Alert not found");
-            }
+            if (!alert) throw new Error("Alert not found");
             return { success: true };
         }),
 
-    // Simulate IoT alert (for demo purposes)
     simulateIoT: adminProcedure
         .input(
             z.object({
@@ -127,41 +125,34 @@ export const alertsRouter = {
             })
         )
         .handler(async ({ input }) => {
-            let alertData: {
-                title: string;
-                message: string;
-                type: "info" | "warning" | "error" | "success";
-                priority: "low" | "medium" | "high" | "critical";
-            };
+            let title: string;
+            let message: string;
+            let type: "info" | "warning" = "info";
+            let priority: "low" | "medium" | "high" | "critical" = "low";
 
             switch (input.sensorType) {
                 case "occupancy":
-                    alertData = {
-                        title: `Room ${input.location} Occupancy Alert`,
-                        message: `Current occupancy: ${input.value} people`,
-                        type: input.value > 50 ? "warning" : "info",
-                        priority: input.value > 50 ? "high" : "low",
-                    };
+                    title = `Room ${input.location} Occupancy Alert`;
+                    message = `Current occupancy: ${input.value} people`;
+                    type = input.value > 50 ? "warning" : "info";
+                    priority = input.value > 50 ? "high" : "low";
                     break;
                 case "temperature":
-                    alertData = {
-                        title: `Temperature Alert - ${input.location}`,
-                        message: `Temperature: ${input.value}°C`,
-                        type: input.value > 30 || input.value < 15 ? "warning" : "info",
-                        priority: input.value > 35 ? "critical" : "medium",
-                    };
+                    title = `Temperature Alert - ${input.location}`;
+                    message = `Temperature: ${input.value}°C`;
+                    type = input.value > 30 || input.value < 15 ? "warning" : "info";
+                    priority = input.value > 35 ? "critical" : "medium";
                     break;
                 default:
-                    alertData = {
-                        title: `Sensor Alert - ${input.location}`,
-                        message: `${input.sensorType}: ${input.value}`,
-                        type: "info",
-                        priority: "low",
-                    };
+                    title = `Sensor Alert - ${input.location}`;
+                    message = `${input.sensorType}: ${input.value}`;
             }
 
-            const alert = await Alert.create({
-                ...alertData,
+            const newAlert = new Alert({
+                title,
+                message,
+                type,
+                priority,
                 source: "iot",
                 targetUsers: [],
                 metadata: {
@@ -170,6 +161,8 @@ export const alertsRouter = {
                     value: input.value,
                 },
             });
+
+            const alert = await newAlert.save();
 
             return {
                 id: alert._id.toString(),

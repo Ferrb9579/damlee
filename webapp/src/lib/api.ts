@@ -1,17 +1,17 @@
 import { createORPCClient } from "@orpc/client";
-import { createORPCReactQueryUtils } from "@orpc/react-query";
-import type { Router } from "../../backend/src/router/index.js";
+import { RPCLink } from "@orpc/client/fetch";
 
 const API_URL = "http://localhost:3001/api";
 
-// Create ORPC client with auth header
-export const client = createORPCClient<Router>({
-    baseURL: API_URL,
+// Create the RPC link with headers
+const link = new RPCLink({
+    url: API_URL,
     headers: () => {
         const token = localStorage.getItem("token");
         return token ? { Authorization: `Bearer ${token}` } : {};
     },
 });
 
-// Create React Query utilities
-export const orpc = createORPCReactQueryUtils(client);
+// Create ORPC client - using any to avoid cross-project type issues
+// In production, use a shared types package
+export const client = createORPCClient<any>(link);

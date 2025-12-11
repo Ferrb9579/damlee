@@ -6,16 +6,28 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
+interface TeamMember {
+    _id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+}
+
 interface Team {
     id: string;
     name: string;
     description?: string;
-    owner: { _id: string; name: string; email: string };
-    members: { _id: string; name: string; email: string; avatar?: string }[];
+    owner: TeamMember;
+    members: TeamMember[];
     color?: string;
     memberCount: number;
     createdAt: string;
 }
+
+const colorOptions = [
+    "#8b5cf6", "#3b82f6", "#06b6d4", "#10b981",
+    "#f59e0b", "#ef4444", "#ec4899", "#6366f1",
+];
 
 export function TeamsPage() {
     const [teams, setTeams] = useState<Team[]>([]);
@@ -66,14 +78,8 @@ export function TeamsPage() {
         }
     };
 
-    const colorOptions = [
-        "#8b5cf6", "#3b82f6", "#06b6d4", "#10b981",
-        "#f59e0b", "#ef4444", "#ec4899", "#6366f1",
-    ];
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-6">
-            {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-white flex items-center gap-3">
@@ -91,7 +97,6 @@ export function TeamsPage() {
                 </Button>
             </div>
 
-            {/* Teams Grid */}
             {loading ? (
                 <div className="flex items-center justify-center py-20">
                     <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
@@ -117,7 +122,7 @@ export function TeamsPage() {
                                 <div className="flex items-center gap-3">
                                     <div
                                         className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
-                                        style={{ backgroundColor: team.color }}
+                                        style={{ backgroundColor: team.color || "#8b5cf6" }}
                                     >
                                         {team.name[0]?.toUpperCase()}
                                     </div>
@@ -138,7 +143,6 @@ export function TeamsPage() {
                                 <p className="text-gray-400 text-sm mb-4 line-clamp-2">{team.description}</p>
                             )}
 
-                            {/* Owner */}
                             <div className="flex items-center gap-2 mb-3">
                                 <Crown className="w-4 h-4 text-amber-400" />
                                 <div className="flex items-center gap-2">
@@ -149,7 +153,6 @@ export function TeamsPage() {
                                 </div>
                             </div>
 
-                            {/* Members */}
                             <div className="flex items-center gap-2 pt-3 border-t border-white/5">
                                 <div className="flex -space-x-2">
                                     {team.members.slice(0, 5).map((member, i) => (
@@ -176,7 +179,6 @@ export function TeamsPage() {
                 </div>
             )}
 
-            {/* Create Team Dialog */}
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogContent className="bg-slate-900 border-white/10 text-white max-w-md">
                     <DialogHeader>
@@ -190,7 +192,7 @@ export function TeamsPage() {
                             <label className="text-sm text-gray-400 mb-1 block">Team Name</label>
                             <Input
                                 value={newTeam.name}
-                                onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTeam({ ...newTeam, name: e.target.value })}
                                 placeholder="Enter team name"
                                 className="bg-white/5 border-white/10 text-white"
                             />
@@ -199,7 +201,7 @@ export function TeamsPage() {
                             <label className="text-sm text-gray-400 mb-1 block">Description</label>
                             <Input
                                 value={newTeam.description}
-                                onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTeam({ ...newTeam, description: e.target.value })}
                                 placeholder="Optional description"
                                 className="bg-white/5 border-white/10 text-white"
                             />

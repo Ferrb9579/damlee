@@ -52,11 +52,15 @@ export const teamsRouter = {
     create: protectedProcedure
         .input(teamSchema)
         .handler(async ({ input, context }) => {
-            const team = await Team.create({
-                ...input,
+            const newTeam = new Team({
+                name: input.name,
+                description: input.description,
+                color: input.color || "#8b5cf6",
                 owner: context.user.userId,
-                members: [context.user.userId], // Owner is automatically a member
+                members: [context.user.userId],
             });
+
+            const team = await newTeam.save();
 
             return {
                 id: team._id.toString(),
@@ -78,7 +82,6 @@ export const teamsRouter = {
                 throw new Error("Team not found");
             }
 
-            // Only owner can update
             if (team.owner.toString() !== context.user.userId) {
                 throw new Error("Only the team owner can update the team");
             }
@@ -89,76 +92,50 @@ export const teamsRouter = {
                 { new: true }
             );
 
+            if (!updated) {
+                throw new Error("Failed to update team");
+            }
+
             return {
-                id: updated!._id.toString(),
-                name: updated!.name,
-                color: updated!.color,
+                id: updated._id.toString(),
+                name: updated.name,
+                color: updated.color,
             };
         }),
 
     addMember: protectedProcedure
-        .input(
-            z.object({
-                teamId: z.string(),
-                userId: z.string(),
-            })
-        )
+        .input(z.object({ teamId: z.string(), userId: z.string() }))
         .handler(async ({ input, context }) => {
             const team = await Team.findById(input.teamId);
-            if (!team) {
-                throw new Error("Team not found");
-            }
-
-            // Only owner can add members
+            if (!team) throw new Error("Team not found");
             if (team.owner.toString() !== context.user.userId) {
                 throw new Error("Only the team owner can add members");
             }
 
-            // Check if user exists
             const user = await User.findById(input.userId);
-            if (!user) {
-                throw new Error("User not found");
-            }
+            if (!user) throw new Error("User not found");
 
-            // Check if already a member
             if (team.members.some((m) => m.toString() === input.userId)) {
                 throw new Error("User is already a team member");
             }
 
-            await Team.findByIdAndUpdate(input.teamId, {
-                $push: { members: input.userId },
-            });
-
+            await Team.findByIdAndUpdate(input.teamId, { $push: { members: input.userId } });
             return { success: true };
         }),
 
     removeMember: protectedProcedure
-        .input(
-            z.object({
-                teamId: z.string(),
-                userId: z.string(),
-            })
-        )
+        .input(z.object({ teamId: z.string(), userId: z.string() }))
         .handler(async ({ input, context }) => {
             const team = await Team.findById(input.teamId);
-            if (!team) {
-                throw new Error("Team not found");
-            }
-
-            // Only owner can remove members
+            if (!team) throw new Error("Team not found");
             if (team.owner.toString() !== context.user.userId) {
                 throw new Error("Only the team owner can remove members");
             }
-
-            // Can't remove the owner
             if (team.owner.toString() === input.userId) {
                 throw new Error("Cannot remove the team owner");
             }
 
-            await Team.findByIdAndUpdate(input.teamId, {
-                $pull: { members: input.userId },
-            });
-
+            await Team.findByIdAndUpdate(input.teamId, { $pull: { members: input.userId } });
             return { success: true };
         }),
 
@@ -166,11 +143,7 @@ export const teamsRouter = {
         .input(z.object({ id: z.string() }))
         .handler(async ({ input, context }) => {
             const team = await Team.findById(input.id);
-            if (!team) {
-                throw new Error("Team not found");
-            }
-
-            // Only owner can delete
+            if (!team) throw new Error("Team not found");
             if (team.owner.toString() !== context.user.userId) {
                 throw new Error("Only the team owner can delete the team");
             }
@@ -179,7 +152,6 @@ export const teamsRouter = {
             return { success: true };
         }),
 
-    // Get all users for member selection
     availableUsers: protectedProcedure.handler(async () => {
         const users = await User.find().select("name email avatar");
         return users.map((u) => ({

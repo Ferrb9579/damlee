@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure } from "../orpc.js";
-import { Event } from "../models/index.js";
+import { Event, type IEvent } from "../models/index.js";
 
 const eventSchema = z.object({
     title: z.string().min(1),
@@ -23,7 +23,7 @@ export const eventsRouter = {
                 status: z.enum(["scheduled", "in-progress", "completed", "cancelled"]).optional(),
             }).optional()
         )
-        .handler(async ({ input, context }) => {
+        .handler(async ({ input }) => {
             const query: Record<string, unknown> = {};
 
             if (input?.start && input?.end) {
@@ -87,13 +87,20 @@ export const eventsRouter = {
     create: protectedProcedure
         .input(eventSchema)
         .handler(async ({ input, context }) => {
-            const event = await Event.create({
-                ...input,
+            const newEvent = new Event({
+                title: input.title,
+                description: input.description,
                 start: new Date(input.start),
                 end: new Date(input.end),
+                location: input.location,
+                attendees: input.attendees,
+                status: input.status || "scheduled",
+                color: input.color,
                 reminders: input.reminders?.map((r) => new Date(r)),
                 createdBy: context.user.userId,
             });
+
+            const event = await newEvent.save();
 
             return {
                 id: event._id.toString(),
@@ -144,7 +151,6 @@ export const eventsRouter = {
             return { success: true };
         }),
 
-    // Check for conflicts
     checkConflicts: protectedProcedure
         .input(
             z.object({

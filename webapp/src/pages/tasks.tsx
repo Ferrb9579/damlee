@@ -5,10 +5,7 @@ import {
     Plus,
     GripVertical,
     Calendar,
-    User,
     Flag,
-    X,
-    Edit2,
     Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,14 +38,14 @@ const columns = [
     { id: "done", title: "Done", color: "from-emerald-500 to-green-500" },
 ] as const;
 
-const priorityColors = {
+const priorityColors: Record<string, string> = {
     low: "bg-gray-500/20 text-gray-400",
     medium: "bg-blue-500/20 text-blue-400",
     high: "bg-orange-500/20 text-orange-400",
     urgent: "bg-red-500/20 text-red-400",
 };
 
-const priorityDots = {
+const priorityDots: Record<string, string> = {
     low: "bg-gray-400",
     medium: "bg-blue-400",
     high: "bg-orange-400",
@@ -117,7 +114,7 @@ export function TasksPage() {
         try {
             await client.tasks.updateStatus({
                 id: draggedTask.task.id,
-                status: targetColumn as Task["priority"],
+                status: targetColumn as "todo" | "in-progress" | "review" | "done",
                 order: 0,
             });
             fetchTasks();
@@ -138,7 +135,6 @@ export function TasksPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-6">
-            {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-white flex items-center gap-3">
@@ -156,7 +152,6 @@ export function TasksPage() {
                 </Button>
             </div>
 
-            {/* Kanban Board */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {columns.map((column) => {
                     const columnTasks = tasks?.[column.id] ?? [];
@@ -167,7 +162,6 @@ export function TasksPage() {
                             onDragOver={handleDragOver}
                             onDrop={() => handleDrop(column.id)}
                         >
-                            {/* Column Header */}
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2">
                                     <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${column.color}`} />
@@ -178,7 +172,6 @@ export function TasksPage() {
                                 </div>
                             </div>
 
-                            {/* Tasks */}
                             <div className="space-y-3 min-h-[200px]">
                                 {loading ? (
                                     <div className="flex items-center justify-center py-8">
@@ -197,7 +190,7 @@ export function TasksPage() {
                                         >
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="flex items-start gap-2 flex-1 min-w-0">
-                                                    <GripVertical className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    <GripVertical className="w-4 h-4 text-gray-500 mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                     <div className="min-w-0">
                                                         <p className="text-white font-medium truncate">{task.title}</p>
                                                         {task.description && (
@@ -243,7 +236,6 @@ export function TasksPage() {
                 })}
             </div>
 
-            {/* Create Task Dialog */}
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogContent className="bg-slate-900 border-white/10 text-white max-w-md">
                     <DialogHeader>
@@ -257,7 +249,7 @@ export function TasksPage() {
                             <label className="text-sm text-gray-400 mb-1 block">Task Title</label>
                             <Input
                                 value={newTask.title}
-                                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTask({ ...newTask, title: e.target.value })}
                                 placeholder="Enter task title"
                                 className="bg-white/5 border-white/10 text-white"
                             />
@@ -266,13 +258,13 @@ export function TasksPage() {
                             <label className="text-sm text-gray-400 mb-1 block">Description</label>
                             <Input
                                 value={newTask.description}
-                                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTask({ ...newTask, description: e.target.value })}
                                 placeholder="Optional description"
                                 className="bg-white/5 border-white/10 text-white"
                             />
                         </div>
                         <div>
-                            <label className="text-sm text-gray-400 mb-2 block flex items-center gap-1">
+                            <label className="text-sm text-gray-400 mb-2 flex items-center gap-1">
                                 <Flag className="w-3 h-3" /> Priority
                             </label>
                             <div className="flex gap-2">

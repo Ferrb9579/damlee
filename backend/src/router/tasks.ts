@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { protectedProcedure } from "../orpc.js";
-import { Task, type TaskStatus } from "../models/index.js";
+import { Task } from "../models/index.js";
+
+type TaskStatus = "todo" | "in-progress" | "review" | "done";
 
 const taskSchema = z.object({
     title: z.string().min(1),
@@ -61,9 +63,7 @@ export const tasksRouter = {
                 .populate("createdBy", "name email")
                 .populate("team", "name color");
 
-            if (!task) {
-                throw new Error("Task not found");
-            }
+            if (!task) throw new Error("Task not found");
 
             return {
                 id: task._id.toString(),
@@ -84,18 +84,25 @@ export const tasksRouter = {
     create: protectedProcedure
         .input(taskSchema)
         .handler(async ({ input, context }) => {
-            // Get max order for the status
             const maxOrderTask = await Task.findOne({ status: input.status ?? "todo" })
                 .sort({ order: -1 })
                 .select("order");
             const order = (maxOrderTask?.order ?? 0) + 1;
 
-            const task = await Task.create({
-                ...input,
+            const newTask = new Task({
+                title: input.title,
+                description: input.description,
+                status: input.status || "todo",
+                priority: input.priority || "medium",
+                assignee: input.assignee || undefined,
                 dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
+                team: input.team || undefined,
+                labels: input.labels || [],
                 createdBy: context.user.userId,
                 order,
             });
+
+            const task = await newTask.save();
 
             return {
                 id: task._id.toString(),
@@ -120,10 +127,7 @@ export const tasksRouter = {
             }
 
             const task = await Task.findByIdAndUpdate(input.id, { $set: updateData }, { new: true });
-
-            if (!task) {
-                throw new Error("Task not found");
-            }
+            if (!task) throw new Error("Task not found");
 
             return {
                 id: task._id.toString(),
@@ -133,7 +137,6 @@ export const tasksRouter = {
             };
         }),
 
-    // Quick status update for Kanban drag & drop
     updateStatus: protectedProcedure
         .input(
             z.object({
@@ -143,16 +146,12 @@ export const tasksRouter = {
             })
         )
         .handler(async ({ input }) => {
-            // Update the moved task
             const task = await Task.findByIdAndUpdate(
                 input.id,
                 { $set: { status: input.status, order: input.order } },
                 { new: true }
             );
-
-            if (!task) {
-                throw new Error("Task not found");
-            }
+            if (!task) throw new Error("Task not found");
 
             return {
                 id: task._id.toString(),
@@ -161,23 +160,11 @@ export const tasksRouter = {
             };
         }),
 
-    // Reorder tasks within a column
     reorder: protectedProcedure
-        .input(
-            z.object({
-                tasks: z.array(
-                    z.object({
-                        id: z.string(),
-                        order: z.number(),
-                    })
-                ),
-            })
-        )
+        .input(z.object({ tasks: z.array(z.object({ id: z.string(), order: z.number() })) }))
         .handler(async ({ input }) => {
             await Promise.all(
-                input.tasks.map((t) =>
-                    Task.findByIdAndUpdate(t.id, { $set: { order: t.order } })
-                )
+                input.tasks.map((t) => Task.findByIdAndUpdate(t.id, { $set: { order: t.order } }))
             );
             return { success: true };
         }),
@@ -186,13 +173,10 @@ export const tasksRouter = {
         .input(z.object({ id: z.string() }))
         .handler(async ({ input }) => {
             const task = await Task.findByIdAndDelete(input.id);
-            if (!task) {
-                throw new Error("Task not found");
-            }
+            if (!task) throw new Error("Task not found");
             return { success: true };
         }),
 
-    // Get tasks grouped by status for Kanban view
     kanban: protectedProcedure
         .input(z.object({ team: z.string().optional() }).optional())
         .handler(async ({ input }) => {
@@ -211,51 +195,26 @@ export const tasksRouter = {
                 "done": [],
             };
 
-            tasks.forEach((task) => {
-                grouped[task.status].push(task);
+            for (const task of tasks) {
+                grouped[task.status as TaskStatus].push(task);
+            }
+
+            const mapTask = (t: (typeof tasks)[0]) => ({
+                id: t._id.toString(),
+                title: t.title,
+                description: t.description,
+                priority: t.priority,
+                assignee: t.assignee,
+                dueDate: t.dueDate?.toISOString(),
+                labels: t.labels,
+                order: t.order,
             });
 
             return {
-                todo: grouped["todo"].map((t) => ({
-                    id: t._id.toString(),
-                    title: t.title,
-                    description: t.description,
-                    priority: t.priority,
-                    assignee: t.assignee,
-                    dueDate: t.dueDate?.toISOString(),
-                    labels: t.labels,
-                    order: t.order,
-                })),
-                "in-progress": grouped["in-progress"].map((t) => ({
-                    id: t._id.toString(),
-                    title: t.title,
-                    description: t.description,
-                    priority: t.priority,
-                    assignee: t.assignee,
-                    dueDate: t.dueDate?.toISOString(),
-                    labels: t.labels,
-                    order: t.order,
-                })),
-                review: grouped["review"].map((t) => ({
-                    id: t._id.toString(),
-                    title: t.title,
-                    description: t.description,
-                    priority: t.priority,
-                    assignee: t.assignee,
-                    dueDate: t.dueDate?.toISOString(),
-                    labels: t.labels,
-                    order: t.order,
-                })),
-                done: grouped["done"].map((t) => ({
-                    id: t._id.toString(),
-                    title: t.title,
-                    description: t.description,
-                    priority: t.priority,
-                    assignee: t.assignee,
-                    dueDate: t.dueDate?.toISOString(),
-                    labels: t.labels,
-                    order: t.order,
-                })),
+                todo: grouped["todo"].map(mapTask),
+                "in-progress": grouped["in-progress"].map(mapTask),
+                review: grouped["review"].map(mapTask),
+                done: grouped["done"].map(mapTask),
             };
         }),
 };

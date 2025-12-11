@@ -36,11 +36,16 @@ app.all("/api/*", async (req, res) => {
         }
     }
 
-    const fetchRequest = new Request(url, {
+    const requestInit: RequestInit = {
         method: req.method,
         headers,
-        body: ["GET", "HEAD"].includes(req.method) ? undefined : JSON.stringify(req.body),
-    });
+    };
+
+    if (!["GET", "HEAD"].includes(req.method)) {
+        requestInit.body = JSON.stringify(req.body);
+    }
+
+    const fetchRequest = new Request(url, requestInit);
 
     try {
         const { matched, response } = await handler.handle(fetchRequest, {
