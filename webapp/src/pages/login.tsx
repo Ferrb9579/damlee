@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/stores/auth-store";
@@ -22,9 +23,14 @@ export function LoginPage() {
         try {
             const result = await client.auth.login({ email, password });
             login(result.user, result.token);
+            toast.success("Welcome back!", {
+                description: `Signed in as ${result.user.email}`,
+            });
             navigate({ to: "/" });
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Login failed");
+            const message = err instanceof Error ? err.message : "Login failed";
+            setError(message);
+            toast.error("Login failed", { description: message });
         } finally {
             setIsLoading(false);
         }

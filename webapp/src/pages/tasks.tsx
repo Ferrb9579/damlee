@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { client } from "@/lib/api";
 import {
     CheckSquare,
@@ -91,9 +92,11 @@ export function TasksPage() {
             });
             setShowCreateDialog(false);
             setNewTask({ title: "", description: "", priority: "medium" });
+            toast.success("Task created", { description: newTask.title });
             fetchTasks();
         } catch (error) {
             console.error("Failed to create task:", error);
+            toast.error("Failed to create task");
         }
     };
 
@@ -127,9 +130,11 @@ export function TasksPage() {
     const handleDeleteTask = async (id: string) => {
         try {
             await client.tasks.delete({ id });
+            toast.success("Task deleted");
             fetchTasks();
         } catch (error) {
             console.error("Failed to delete task:", error);
+            toast.error("Failed to delete task");
         }
     };
 

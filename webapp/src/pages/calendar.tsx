@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { client } from "@/lib/api";
 import {
     Calendar as CalendarIcon,
@@ -90,9 +91,11 @@ export function CalendarPage() {
             });
             setShowEventDialog(false);
             setNewEvent({ title: "", description: "", start: "", end: "", location: "" });
+            toast.success("Event created", { description: newEvent.title });
             fetchEvents();
         } catch (error) {
             console.error("Failed to create event:", error);
+            toast.error("Failed to create event");
         }
     };
 

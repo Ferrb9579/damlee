@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { Toaster } from "sonner";
 
 import { Sidebar } from "@/components/layout/sidebar";
 import { ProtectedRoute } from "@/components/layout/protected-route";
@@ -152,6 +153,19 @@ function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <RouterProvider router={router} />
+            <Toaster
+                position="top-right"
+                theme="dark"
+                richColors
+                closeButton
+                toastOptions={{
+                    style: {
+                        background: "rgba(30, 41, 59, 0.9)",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        backdropFilter: "blur(8px)",
+                    },
+                }}
+            />
         </QueryClientProvider>
     );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { client } from "@/lib/api";
 import { Users, Plus, UserPlus, Trash2, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,9 +63,11 @@ export function TeamsPage() {
             });
             setShowCreateDialog(false);
             setNewTeam({ name: "", description: "", color: "#8b5cf6" });
+            toast.success("Team created", { description: newTeam.name });
             fetchTeams();
         } catch (error) {
             console.error("Failed to create team:", error);
+            toast.error("Failed to create team");
         }
     };
 
@@ -72,9 +75,11 @@ export function TeamsPage() {
         if (!confirm("Are you sure you want to delete this team?")) return;
         try {
             await client.teams.delete({ id });
+            toast.success("Team deleted");
             fetchTeams();
         } catch (error) {
             console.error("Failed to delete team:", error);
+            toast.error("Failed to delete team");
         }
     };
 
