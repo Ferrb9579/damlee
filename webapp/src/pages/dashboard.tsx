@@ -10,6 +10,7 @@ import {
     Clock,
     ArrowUpRight,
     Plus,
+    Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
@@ -21,6 +22,8 @@ interface DashboardSummary {
     totalUsers: number;
     totalTeams: number;
     tasksCompletedThisWeek: number;
+    totalAssets: number;
+    lowStockItems: number;
 }
 
 export function DashboardPage() {
@@ -65,19 +68,19 @@ export function DashboardPage() {
             shadowColor: "shadow-orange-500/20",
         },
         {
-            label: "Total Teams",
-            value: summary?.totalTeams ?? 0,
-            icon: Users,
-            color: "from-emerald-500 to-teal-500",
-            shadowColor: "shadow-emerald-500/20",
+            label: "Low Stock Items",
+            value: summary?.lowStockItems ?? 0,
+            icon: Package,
+            color: "from-red-500 to-pink-500",
+            shadowColor: "shadow-red-500/20",
         },
     ];
 
     const quickActions = [
         { label: "New Event", icon: Calendar, to: "/calendar", color: "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20" },
         { label: "New Task", icon: CheckSquare, to: "/tasks", color: "bg-violet-500/10 text-violet-400 hover:bg-violet-500/20" },
+        { label: "Add Asset", icon: Package, to: "/inventory", color: "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" },
         { label: "View Alerts", icon: AlertTriangle, to: "/alerts", color: "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20" },
-        { label: "Analytics", icon: TrendingUp, to: "/analytics", color: "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" },
     ];
 
     return (

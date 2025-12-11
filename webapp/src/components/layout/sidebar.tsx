@@ -11,6 +11,8 @@ import {
     ChevronLeft,
     ChevronRight,
     Settings,
+    Package,
+    MapPin,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -21,6 +23,8 @@ const navItems = [
     { path: "/calendar", label: "Calendar", icon: Calendar },
     { path: "/tasks", label: "Tasks", icon: CheckSquare },
     { path: "/teams", label: "Teams", icon: Users },
+    { path: "/inventory", label: "Inventory", icon: Package },
+    { path: "/rooms", label: "Rooms", icon: MapPin },
     { path: "/alerts", label: "Alerts", icon: Bell },
     { path: "/analytics", label: "Analytics", icon: BarChart3 },
 ];

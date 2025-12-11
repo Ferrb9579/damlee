@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure } from "../orpc.js";
-import { Task, Event, Team, User } from "../models/index.js";
+import { Task, Event, Team, User, Asset } from "../models/index.js";
 
 export const analyticsRouter = {
     // Task metrics
@@ -179,6 +179,12 @@ export const analyticsRouter = {
             updatedAt: { $gte: startOfWeek },
         });
 
+        // Inventory Stats
+        const totalAssets = await Asset.countDocuments();
+        const lowStockItems = await Asset.countDocuments({
+            $expr: { $lte: ["$quantity", "$minQuantity"] },
+        });
+
         return {
             todayEvents,
             myPendingTasks,
@@ -186,6 +192,8 @@ export const analyticsRouter = {
             totalUsers,
             totalTeams,
             tasksCompletedThisWeek,
+            totalAssets,
+            lowStockItems,
         };
     }),
 };

@@ -21,6 +21,8 @@ import { TasksPage } from "@/pages/tasks";
 import { TeamsPage } from "@/pages/teams";
 import { AlertsPage } from "@/pages/alerts";
 import { AnalyticsPage } from "@/pages/analytics";
+import { InventoryPage } from "@/pages/inventory";
+import { RoomsPage } from "@/pages/rooms";
 
 import "./index.css";
 
@@ -114,6 +116,20 @@ const analyticsRoute = createRoute({
     component: AnalyticsPage,
 });
 
+// Inventory
+const inventoryRoute = createRoute({
+    getParentRoute: () => mainLayoutRoute,
+    path: "/inventory",
+    component: InventoryPage,
+});
+
+// Rooms
+const roomsRoute = createRoute({
+    getParentRoute: () => mainLayoutRoute,
+    path: "/rooms",
+    component: RoomsPage,
+});
+
 // Build route tree
 const routeTree = rootRoute.addChildren([
     loginRoute,
@@ -125,6 +141,8 @@ const routeTree = rootRoute.addChildren([
         teamsRoute,
         alertsRoute,
         analyticsRoute,
+        inventoryRoute,
+        roomsRoute,
     ]),
 ]);
 
